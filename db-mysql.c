@@ -34,13 +34,13 @@
 #define DEFAULT_STMT_PWDB \
 	"SELECT password FROM pool_worker WHERE username = ?"
 #define DEFAULT_STMT_SHARELOG \
-	"INSERT INTO shares (rem_host, username, our_result, "		\
+	"INSERT INTO shares (rem_host, username, password, our_result, "		\
 	"                    upstream_result, reason, solution) "	\
-	"VALUES(?,?,?,?,?,?)"
+	"VALUES(?,?,?,?,?,?,?)"
 
 #define DEFAULT_STMT_REQLOG \
-	"INSERT INTO requests (rem_host, username, uri) "	\
-	"VALUES(?,?,?)"
+	"INSERT INTO requests (rem_host, username, password, uri) "	\
+	"VALUES(?,?,?,?)"
 
 static void bind_instr(MYSQL_BIND *bind_param, unsigned long *bind_lengths,
 		       unsigned int idx, const char *s)
@@ -130,7 +130,7 @@ err_out:
 	return NULL;
 }
 
-static bool my_sharelog(const char *rem_host, const char *username,
+static bool my_sharelog(const char *rem_host, const char *username, const char *password,  
 			const char *our_result, const char *upstream_result,
 			const char *reason, const char *solution)
 {
@@ -149,10 +149,11 @@ static bool my_sharelog(const char *rem_host, const char *username,
 	memset(bind_lengths, 0, sizeof(bind_lengths));
 	bind_instr(bind_param, bind_lengths, 0, rem_host);
 	bind_instr(bind_param, bind_lengths, 1, username);
-	bind_instr(bind_param, bind_lengths, 2, our_result);
-	bind_instr(bind_param, bind_lengths, 3, upstream_result);
-	bind_instr(bind_param, bind_lengths, 4, reason);
-	bind_instr(bind_param, bind_lengths, 5, solution);
+	bind_instr(bind_param, bind_lengths, 2, password);
+	bind_instr(bind_param, bind_lengths, 3, our_result);
+	bind_instr(bind_param, bind_lengths, 4, upstream_result);
+	bind_instr(bind_param, bind_lengths, 5, reason);
+	bind_instr(bind_param, bind_lengths, 6, solution);
 
 	step = "prep";
 	if (mysql_stmt_prepare(stmt, srv.db_stmt_sharelog,
@@ -179,7 +180,7 @@ err_out:
 }
 
 static bool my_reqlog(const char *rem_host, const char *username,
-		      const char *uri)
+		      const char *password, const char *uri)
 {
 	MYSQL *db = srv.db_cxn;
 	MYSQL_STMT *stmt;
@@ -196,7 +197,8 @@ static bool my_reqlog(const char *rem_host, const char *username,
 	memset(bind_lengths, 0, sizeof(bind_lengths));
 	bind_instr(bind_param, bind_lengths, 0, rem_host);
 	bind_instr(bind_param, bind_lengths, 1, username);
-	bind_instr(bind_param, bind_lengths, 2, uri);
+	bind_instr(bind_param, bind_lengths, 2, password);
+	bind_instr(bind_param, bind_lengths, 3, uri);
 
 	step = "prep";
 	if (mysql_stmt_prepare(stmt, srv.db_stmt_reqlog,

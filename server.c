@@ -568,7 +568,7 @@ err_out:
 	cli_free(cli);
 }
 
-static bool valid_auth_hdr(const char *hdr, char *username_out)
+static bool valid_auth_hdr(const char *hdr, char *username_out, char *password_out)
 {
 	char *t_type = NULL;
 	char *t_b64 = NULL;
@@ -609,11 +609,13 @@ static bool valid_auth_hdr(const char *hdr, char *username_out)
 
 	/* password database authentication check */
 	pass_db = pwdb_lookup(user);
-	if (!pass_db || (strcmp(pass, pass_db) && *pass_db != '\0'))
+	if (!srv.any_password && (!pass_db || (strcmp(pass, pass_db) && *pass_db != '\0')))
 		goto out;
 
 	rc = true;
 	strncpy(username_out, user, 64);
+        strncpy(password_out, pass, 64);
+        password_out[64] = 0;
 	username_out[64] = 0;
 
 out:
@@ -626,14 +628,14 @@ out:
 }
 
 void reqlog(const char *rem_host, const char *username,
-		   const char *uri)
+		   const char *password, const char *uri)
 {
 	struct timeval tv = { };
 	char *f;
 	ssize_t wrc;
 	struct tm tm;
 	if (srv.db_reqlog && srv.db_ops->reqlog != NULL)
-		srv.db_ops->reqlog(rem_host, username, uri);
+		srv.db_ops->reqlog(rem_host, username, password, uri);
 
 	if (srv.req_fd < 0)
 		return;
@@ -661,7 +663,7 @@ void reqlog(const char *rem_host, const char *username,
 	free(f);
 }
 
-void sharelog(const char *rem_host, const char *username,
+void sharelog(const char *rem_host, const char *username, const char *password,  
 	      const char *our_result, const char *upstream_result,
 	      const char *reason, const char *solution)
 {
@@ -671,7 +673,7 @@ void sharelog(const char *rem_host, const char *username,
 	struct tm tm;
 
 	if (srv.db_sharelog && srv.db_ops->sharelog != NULL)
-		srv.db_ops->sharelog(rem_host, username, our_result,
+		srv.db_ops->sharelog(rem_host, username, password, our_result,
 				     upstream_result, reason, solution);
 
 	if (srv.share_fd < 0)
@@ -708,6 +710,7 @@ static void http_handle_req(struct evhttp_request *req, bool longpoll)
 	const char *clen_str, *auth;
 	char *body_str;
 	char username[65] = "";
+	char password[65] = "";
 	void *body, *reply = NULL;
 	int clen = 0;
 	unsigned int reply_len = 0;
@@ -718,13 +721,13 @@ static void http_handle_req(struct evhttp_request *req, bool longpoll)
 
 	auth = evhttp_find_header(req->input_headers, "Authorization");
 	if (!auth) {
-		reqlog(req->remote_host, username, req->uri);
+		reqlog(req->remote_host, username, password, req->uri);
 		evhttp_add_header(req->output_headers, "WWW-Authenticate", "Basic realm=\"pushpool\"");
 		evhttp_send_reply(req, 401, "not authorized", NULL);
 		return;
 	}
-	if (!valid_auth_hdr(auth, username)) {
-		reqlog(req->remote_host, username, req->uri);
+	if (!valid_auth_hdr(auth, username, password)) {
+		reqlog(req->remote_host, username, password, req->uri);
 		evhttp_send_reply(req, 403, "access forbidden", NULL);
 		return;
 	}
@@ -734,7 +737,7 @@ static void http_handle_req(struct evhttp_request *req, bool longpoll)
 		if (clen_str)
 			clen = atoi(clen_str);
 		if (clen < 1 || clen > 999999) {
-			reqlog(req->remote_host, username, req->uri);
+			reqlog(req->remote_host, username, password, req->uri);
 			evhttp_send_reply(req, HTTP_BADREQUEST, "invalid args", NULL);
 			return;
 		}
@@ -755,7 +758,7 @@ static void http_handle_req(struct evhttp_request *req, bool longpoll)
 	if (!jreq)
 		goto err_out_bad_req;
 
-	rc = msg_json_rpc(req, jreq, username, &reply, &reply_len);
+	rc = msg_json_rpc(req, jreq, username, password, &reply, &reply_len);
 
 	json_decref(jreq);
 
@@ -813,6 +816,7 @@ static void __http_srv_event(struct evhttp_request *req, void *arg,
 	struct server_socket *sock = arg;
 	const char *auth;
 	char username[65] = "";
+	char password[65] = "";
 
 	/* copy X-Forwarded-For header to remote_host, if a trusted proxy provides it */
 	if (sock->cfg->proxy && !strcmp(req->remote_host, sock->cfg->proxy)) {
@@ -827,18 +831,18 @@ static void __http_srv_event(struct evhttp_request *req, void *arg,
 	/* validate user authorization */
 	auth = evhttp_find_header(req->input_headers, "Authorization");
 	if (!auth) {
-		reqlog(req->remote_host, username, req->uri);
+		reqlog(req->remote_host, username, password, req->uri);
 		evhttp_add_header(req->output_headers, "WWW-Authenticate", "Basic realm=\"pushpool\"");
 		evhttp_send_reply(req, 401, "not authorized", NULL);
 		return;
 	}
-	if (!valid_auth_hdr(auth, username)) {
-		reqlog(req->remote_host, username, req->uri);
+	if (!valid_auth_hdr(auth, username, password)) {
+		reqlog(req->remote_host, username, password, req->uri);
 		evhttp_send_reply(req, 403, "access forbidden", NULL);
 		return;
 	}
 
-	reqlog(req->remote_host, username, req->uri);
+	reqlog(req->remote_host, username, password, req->uri);
 
 	/* if longpoll, don't respond now, queue onto list for later */
 	if (longpoll) {
