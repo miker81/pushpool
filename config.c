@@ -212,7 +212,7 @@ static void parse_memcached(const json_t *obj)
 static void parse_database(const json_t *db_obj)
 {
 	const json_t *tmp;
-	const char *db_host, *db_name, *db_un, *db_pw, *db_st_pwdb, *db_st_sharelog, *tmp_str;
+	const char *db_host, *db_name, *db_un, *db_pw, *db_st_pwdb, *db_st_sharelog, *db_st_reqlog, *tmp_str;
 	int db_port = -1;
 
 	if (!json_is_object(db_obj))
@@ -257,6 +257,8 @@ static void parse_database(const json_t *db_obj)
 	db_pw = json_string_value(json_object_get(db_obj, "password"));
 	srv.db_sharelog = (json_is_true(json_object_get(db_obj, "sharelog"))) ?
 		true : false;
+	srv.db_reqlog = (json_is_true(json_object_get(db_obj, "reqlog"))) ?
+		true : false;
 
 	switch (srv.db_eng) {
 
@@ -299,6 +301,11 @@ static void parse_database(const json_t *db_obj)
 		json_object_get(db_obj, "stmt.sharelog"));
 	if (db_st_sharelog)
 		srv.db_stmt_sharelog = strdup(db_st_sharelog);
+	db_st_reqlog = json_string_value(
+		json_object_get(db_obj, "stmt.reqlog"));
+	if (db_st_reqlog)
+		srv.db_stmt_reqlog = strdup(db_st_reqlog);
+
 }
 
 void read_config(void)

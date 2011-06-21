@@ -38,6 +38,10 @@
 	"                    upstream_result, reason, solution) "	\
 	"VALUES(?,?,?,?,?,?)"
 
+#define DEFAULT_STMT_REQLOG \
+	"INSERT INTO requests (rem_host, username, uri) "	\
+	"VALUES(?,?,?)"
+
 static void bind_instr(MYSQL_BIND *bind_param, unsigned long *bind_lengths,
 		       unsigned int idx, const char *s)
 {
@@ -174,6 +178,51 @@ err_out:
 	goto out;
 }
 
+static bool my_reqlog(const char *rem_host, const char *username,
+		      const char *uri)
+{
+	MYSQL *db = srv.db_cxn;
+	MYSQL_STMT *stmt;
+	MYSQL_BIND bind_param[6];
+	unsigned long bind_lengths[6];
+	bool rc = false;
+	const char *step = "init";
+
+	stmt = mysql_stmt_init(db);
+	if (!stmt)
+		return false;
+
+	memset(bind_param, 0, sizeof(bind_param));
+	memset(bind_lengths, 0, sizeof(bind_lengths));
+	bind_instr(bind_param, bind_lengths, 0, rem_host);
+	bind_instr(bind_param, bind_lengths, 1, username);
+	bind_instr(bind_param, bind_lengths, 2, uri);
+
+	step = "prep";
+	if (mysql_stmt_prepare(stmt, srv.db_stmt_reqlog,
+			       strlen(srv.db_stmt_reqlog)))
+		goto err_out;
+
+	step = "bind-param";
+	if (mysql_stmt_bind_param(stmt, bind_param))
+		goto err_out;
+
+	step = "execute";
+	if (mysql_stmt_execute(stmt))
+		goto err_out;
+
+	rc = true;
+
+out:
+	mysql_stmt_close(stmt);
+	return rc;
+
+err_out:
+	applog(LOG_ERR, "mysql reqlog failed at %s", step);
+	goto out;
+}
+
+
 static bool my_open(void)
 {
 	MYSQL *db;
@@ -201,6 +250,9 @@ static bool my_open(void)
 		srv.db_stmt_pwdb = strdup(DEFAULT_STMT_PWDB);
 	if (srv.db_stmt_sharelog == NULL || !*srv.db_stmt_sharelog)
 		srv.db_stmt_sharelog = strdup(DEFAULT_STMT_SHARELOG);
+	if (srv.db_stmt_reqlog == NULL || !*srv.db_stmt_reqlog)
+		srv.db_stmt_reqlog = strdup(DEFAULT_STMT_REQLOG);
+
 	return true;
 
 err_out_db:
@@ -222,6 +274,7 @@ static void my_close(void)
 struct server_db_ops mysql_db_ops = {
 	.pwdb_lookup	= my_pwdb_lookup,
 	.sharelog	= my_sharelog,
+	.reqlog		= my_reqlog,
 	.open		= my_open,
 	.close		= my_close,
 };

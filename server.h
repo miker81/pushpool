@@ -113,6 +113,9 @@ struct server_db_ops {
 	bool	(*sharelog)(const char *rem_host, const char *username,
 			    const char *our_result, const char *upstream_result,
 			    const char *reason, const char *solution);
+	bool	(*reqlog)(const char *rem_host, const char *username,
+			  const char *uri);
+
 	bool	(*open)(void);
 	void	(*close)(void);
 };
@@ -155,8 +158,10 @@ struct server {
 	char			*db_username;
 	char			*db_password;
 	bool			db_sharelog;
+	bool			db_reqlog;
 	char			*db_stmt_pwdb;
 	char			*db_stmt_sharelog;
+	char			*db_stmt_reqlog;
 	void			*db_cxn;
 
 	struct hist		*hist;
@@ -205,6 +210,8 @@ extern struct server srv;
 extern void sharelog(const char *rem_host, const char *username,
 		     const char *, const char *,
 		     const char *, const char *);
+extern void reqlog(const char *rem_host, const char *username,
+		   const char *);
 extern bool cjson_encode(unsigned char op, const char *obj_unc,
 		  void **msg_out, size_t *msglen_out);
 extern bool cjson_encode_obj(unsigned char op, const json_t *obj,

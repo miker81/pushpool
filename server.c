@@ -625,13 +625,15 @@ out:
 	return rc;
 }
 
-static void reqlog(const char *rem_host, const char *username,
+void reqlog(const char *rem_host, const char *username,
 		   const char *uri)
 {
 	struct timeval tv = { };
 	char *f;
 	ssize_t wrc;
 	struct tm tm;
+	if (srv.db_reqlog && srv.db_ops->reqlog != NULL)
+		srv.db_ops->reqlog(rem_host, username, uri);
 
 	if (srv.req_fd < 0)
 		return;
@@ -1339,6 +1341,7 @@ err_out:
 		free(srv.db_password);
 		free(srv.db_stmt_pwdb);
 		free(srv.db_stmt_sharelog);
+		free(srv.db_stmt_reqlog);
 
 		worker_log_expire(time(NULL) + 1);
 		htab_free(srv.workers);
