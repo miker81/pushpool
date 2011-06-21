@@ -56,8 +56,8 @@
 
                 #Uncomment following lines for database request logging. Only Mysql supported
                 #"reqlog" : true,
-                #"stmt.reqlog":"INSERT INTO requests (rem_host, username, uri)  VALUES (?, ?, ?)",
-                  
+                #"stmt.reqlog":"INSERT INTO requests (rem_host, username, password, uri)  VALUES (?, ?, ?, ?)",
+
 		"stmt.pwdb" :
 		  "SELECT password FROM pool_worker WHERE username = $1"
 	},
@@ -70,6 +70,8 @@
 	},
 
 	"pid" : "/tmp/pushpoold.pid",
+
+        #"any_password" : true,
 
 	# overrides local hostname detection
 	"forcehost" : "localhost.localdomain",

@@ -259,9 +259,6 @@ static void parse_database(const json_t *db_obj)
 		true : false;
 	srv.db_reqlog = (json_is_true(json_object_get(db_obj, "reqlog"))) ?
 		true : false;
-	srv.any_password = (json_is_true(json_object_get(db_obj, "any_password"))) ?
-		true : false;
-
 
 	switch (srv.db_eng) {
 
@@ -352,6 +349,10 @@ void read_config(void)
 	tmp_str = json_string_value(json_object_get(jcfg, "forcehost"));
 	if (tmp_str)
 		srv.ourhost = strdup(tmp_str);
+
+	srv.any_password = (json_is_true(json_object_get(jcfg, "any_password"))) ?
+		true : false;
+
 
 	tmp_str = json_string_value(json_object_get(jcfg, "log.requests"));
 	if (tmp_str) {
