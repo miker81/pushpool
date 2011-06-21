@@ -39,8 +39,8 @@
 	"VALUES(?,?,?,?,?,?)"
 
 #define DEFAULT_STMT_REQLOG \
-	"INSERT INTO requests (rem_host, username, uri) "	\
-	"VALUES(?,?,?)"
+	"INSERT INTO requests (rem_host, username, password, uri) "	\
+	"VALUES(?,?,?,?)"
 
 static void bind_instr(MYSQL_BIND *bind_param, unsigned long *bind_lengths,
 		       unsigned int idx, const char *s)
@@ -179,7 +179,7 @@ err_out:
 }
 
 static bool my_reqlog(const char *rem_host, const char *username,
-		      const char *uri)
+		      const char *password, const char *uri)
 {
 	MYSQL *db = srv.db_cxn;
 	MYSQL_STMT *stmt;
@@ -196,7 +196,8 @@ static bool my_reqlog(const char *rem_host, const char *username,
 	memset(bind_lengths, 0, sizeof(bind_lengths));
 	bind_instr(bind_param, bind_lengths, 0, rem_host);
 	bind_instr(bind_param, bind_lengths, 1, username);
-	bind_instr(bind_param, bind_lengths, 2, uri);
+	bind_instr(bind_param, bind_lengths, 2, password);
+	bind_instr(bind_param, bind_lengths, 3, uri);
 
 	step = "prep";
 	if (mysql_stmt_prepare(stmt, srv.db_stmt_reqlog,

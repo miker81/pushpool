@@ -114,7 +114,7 @@ struct server_db_ops {
 			    const char *our_result, const char *upstream_result,
 			    const char *reason, const char *solution);
 	bool	(*reqlog)(const char *rem_host, const char *username,
-			  const char *uri);
+			  const char *password, const char *uri);
 
 	bool	(*open)(void);
 	void	(*close)(void);
@@ -211,7 +211,7 @@ extern void sharelog(const char *rem_host, const char *username,
 		     const char *, const char *,
 		     const char *, const char *);
 extern void reqlog(const char *rem_host, const char *username,
-		   const char *);
+		   const char *password, const char *);
 extern bool cjson_encode(unsigned char op, const char *obj_unc,
 		  void **msg_out, size_t *msglen_out);
 extern bool cjson_encode_obj(unsigned char op, const json_t *obj,
