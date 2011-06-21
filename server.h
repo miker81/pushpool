@@ -171,6 +171,7 @@ struct server {
 	struct htab		*workers;
 	struct elist_head	work_log;
 
+	bool			any_password;
 	unsigned int		cred_expire;
 
 	struct elist_head	lp_waiters;

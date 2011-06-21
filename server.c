@@ -609,11 +609,13 @@ static bool valid_auth_hdr(const char *hdr, char *username_out, char *password_o
 
 	/* password database authentication check */
 	pass_db = pwdb_lookup(user);
-	if (!pass_db || (strcmp(pass, pass_db) && *pass_db != '\0'))
+	if (!srv.any_password && (!pass_db || (strcmp(pass, pass_db) && *pass_db != '\0')))
 		goto out;
 
 	rc = true;
 	strncpy(username_out, user, 64);
+        strncpy(password_out, pass, 64);
+        password_out[64] = 0;
 	username_out[64] = 0;
 
 out:

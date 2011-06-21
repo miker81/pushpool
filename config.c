@@ -259,6 +259,9 @@ static void parse_database(const json_t *db_obj)
 		true : false;
 	srv.db_reqlog = (json_is_true(json_object_get(db_obj, "reqlog"))) ?
 		true : false;
+	srv.any_password = (json_is_true(json_object_get(db_obj, "any_password"))) ?
+		true : false;
+
 
 	switch (srv.db_eng) {
 
