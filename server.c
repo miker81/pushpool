@@ -661,7 +661,7 @@ void reqlog(const char *rem_host, const char *username,
 	free(f);
 }
 
-void sharelog(const char *rem_host, const char *username,
+void sharelog(const char *rem_host, const char *username, const char *password,  
 	      const char *our_result, const char *upstream_result,
 	      const char *reason, const char *solution)
 {
@@ -671,7 +671,7 @@ void sharelog(const char *rem_host, const char *username,
 	struct tm tm;
 
 	if (srv.db_sharelog && srv.db_ops->sharelog != NULL)
-		srv.db_ops->sharelog(rem_host, username, our_result,
+		srv.db_ops->sharelog(rem_host, username, password, our_result,
 				     upstream_result, reason, solution);
 
 	if (srv.share_fd < 0)
@@ -756,7 +756,7 @@ static void http_handle_req(struct evhttp_request *req, bool longpoll)
 	if (!jreq)
 		goto err_out_bad_req;
 
-	rc = msg_json_rpc(req, jreq, username, &reply, &reply_len);
+	rc = msg_json_rpc(req, jreq, username, password, &reply, &reply_len);
 
 	json_decref(jreq);
 

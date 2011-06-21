@@ -316,7 +316,7 @@ static int check_hash(const char *remote_host, const char *auth_user,
 	return better_hash ? 2 : 1;			/* work is valid */
 }
 
-static bool submit_work(const char *remote_host, const char *auth_user,
+static bool submit_work(const char *remote_host, const char *auth_user, const char *auth_password,
 			CURL *curl, const char *hexstr, bool *json_result)
 {
 	json_t *val;
@@ -331,7 +331,7 @@ static bool submit_work(const char *remote_host, const char *auth_user,
 		goto out;
 	if (check_rc == 0) {	/* invalid hash */
 		*json_result = false;
-		sharelog(remote_host, auth_user, "N", NULL, reason, hexstr);
+		sharelog(remote_host, auth_user, auth_password, "N", NULL, reason, hexstr);
 		return true;
 	}
 
@@ -340,7 +340,7 @@ static bool submit_work(const char *remote_host, const char *auth_user,
 	 */
 	if (srv.easy_target && check_rc == 1) {
 		*json_result = true;
-		sharelog(remote_host, auth_user, "Y", NULL, NULL, hexstr);
+		sharelog(remote_host, auth_user, auth_password, "Y", NULL, NULL, hexstr);
 		return true;
 	}
 
@@ -359,7 +359,7 @@ static bool submit_work(const char *remote_host, const char *auth_user,
 	*json_result = json_is_true(json_object_get(val, "result"));
 	rc = true;
 
-	sharelog(remote_host, auth_user,
+	sharelog(remote_host, auth_user, auth_password,
 		 srv.easy_target ? "Y" : *json_result ? "Y" : "N",
 		 *json_result ? "Y" : "N", NULL, hexstr);
 
@@ -382,7 +382,7 @@ out:
 	return rc;
 }
 
-static bool submit_bin_work(const char *remote_host, const char *auth_user,
+static bool submit_bin_work(const char *remote_host, const char *auth_user, const char *auth_password,
 			    CURL *curl, void *data, bool *json_result)
 {
 	char *hexstr = NULL;
@@ -395,7 +395,7 @@ static bool submit_bin_work(const char *remote_host, const char *auth_user,
 		goto out;
 	}
 
-	rc = submit_work(remote_host, auth_user, curl, hexstr, json_result);
+	rc = submit_work(remote_host, auth_user, auth_password, curl, hexstr, json_result);
 
 	free(hexstr);
 
@@ -582,7 +582,7 @@ bool cli_op_work_submit(struct client *cli, unsigned int msgsz)
 
 	if (msgsz != 128)
 		goto err_out;
-	if (!submit_bin_work(cli->addr_host, cli->auth_user,
+	if (!submit_bin_work(cli->addr_host, cli->auth_user, cli->auth_password,
 			     srv.curl, cli->msg, &json_res)) {
 		err_code = BC_ERR_RPC;
 		goto err_out;
@@ -614,7 +614,7 @@ static json_t *json_rpc_errobj(int code, const char *msg)
 }
 
 bool msg_json_rpc(struct evhttp_request *req, json_t *jreq,
-		  const char *username,
+		  const char *username, const char *password,
 		  void **reply, unsigned int *reply_len)
 {
 	const char *method;
@@ -685,7 +685,7 @@ bool msg_json_rpc(struct evhttp_request *req, json_t *jreq,
 			goto out;
 		}
 
-		rpc_rc = submit_work(req->remote_host, username, srv.curl,
+		rpc_rc = submit_work(req->remote_host, username, password, srv.curl,
 				     soln_str, &json_result);
 
 		if (rpc_rc) {

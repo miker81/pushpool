@@ -67,6 +67,7 @@ struct client {
 
 	bool			logged_in;
 	char			auth_user[33];	/* authenticated username */
+	char			auth_password[33];	/* authenticated username */
 
 	struct ubbp_header	ubbp;
 
@@ -110,7 +111,7 @@ struct genlist {
 
 struct server_db_ops {
 	char	* (*pwdb_lookup)(const char *user);
-	bool	(*sharelog)(const char *rem_host, const char *username,
+	bool	(*sharelog)(const char *rem_host, const char *username, const char *password,  
 			    const char *our_result, const char *upstream_result,
 			    const char *reason, const char *solution);
 	bool	(*reqlog)(const char *rem_host, const char *username,
@@ -196,7 +197,7 @@ extern bool cli_op_config(struct client *cli, const json_t *obj);
 extern bool cli_op_work_get(struct client *cli, unsigned int msgsz);
 extern bool cli_op_work_submit(struct client *cli, unsigned int msgsz);
 extern bool msg_json_rpc(struct evhttp_request *req, json_t *jreq,
-			 const char *username,
+			 const char *username, const char *password,
 			 void **reply, unsigned int *reply_len);
 extern void hist_free(struct hist *hist);
 extern struct hist *hist_alloc(void);
@@ -207,7 +208,7 @@ extern bool hist_lookup(struct hist *hist, const unsigned char *hash);
 extern int debugging;
 extern bool use_syslog;
 extern struct server srv;
-extern void sharelog(const char *rem_host, const char *username,
+extern void sharelog(const char *rem_host, const char *username, const char *password,
 		     const char *, const char *,
 		     const char *, const char *);
 extern void reqlog(const char *rem_host, const char *username,
