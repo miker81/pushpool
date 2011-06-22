@@ -136,8 +136,8 @@ static bool my_sharelog(const char *rem_host, const char *username, const char *
 {
 	MYSQL *db = srv.db_cxn;
 	MYSQL_STMT *stmt;
-	MYSQL_BIND bind_param[6];
-	unsigned long bind_lengths[6];
+	MYSQL_BIND bind_param[7];
+	unsigned long bind_lengths[7];
 	bool rc = false;
 	const char *step = "init";
 
@@ -184,8 +184,8 @@ static bool my_reqlog(const char *rem_host, const char *username,
 {
 	MYSQL *db = srv.db_cxn;
 	MYSQL_STMT *stmt;
-	MYSQL_BIND bind_param[6];
-	unsigned long bind_lengths[6];
+	MYSQL_BIND bind_param[4];
+	unsigned long bind_lengths[4];
 	bool rc = false;
 	const char *step = "init";
 
