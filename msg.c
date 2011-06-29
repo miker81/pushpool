@@ -338,7 +338,7 @@ static bool submit_work(const char *remote_host, const char *auth_user, const ch
 	/* if hash is sufficient for share, but not target,
 	 * don't bother submitting to bitcoind
 	 */
-	if (srv.easy_target && check_rc == 1) {
+	if (srv.easy_target && check_rc == 1 && srv.bother_upstream == false) {
 		*json_result = true;
 		sharelog(remote_host, auth_user, auth_password, "Y", NULL, NULL, hexstr);
 		return true;

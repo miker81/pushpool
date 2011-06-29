@@ -353,6 +353,9 @@ void read_config(void)
 	srv.any_password = (json_is_true(json_object_get(jcfg, "any_password"))) ?
 		true : false;
 
+	srv.bother_upstream = (json_is_true(json_object_get(jcfg, "bother_upstream"))) ?
+		true : false;
+
 
 	tmp_str = json_string_value(json_object_get(jcfg, "log.requests"));
 	if (tmp_str) {

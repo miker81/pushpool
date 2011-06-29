@@ -9,3 +9,11 @@ Dependencies:
 	OpenSSL's libcrypto	sha256
 	libcurl			HTTP client
 
+
+
+Added to original version 
+
+* any_password accept and password logging
+* log requests to mysql 
+* attach own pool to BIG one
+

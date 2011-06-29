@@ -73,6 +73,9 @@
 
         #"any_password" : true,
 
+	#we try build cascading system
+        #"bother_upstream" : true, 
+
 	# overrides local hostname detection
 	"forcehost" : "localhost.localdomain",
 
