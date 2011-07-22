@@ -136,14 +136,31 @@ static bool my_sharelog(const char *rem_host, const char *username, const char *
 {
 	MYSQL *db = srv.db_cxn;
 	MYSQL_STMT *stmt;
-	MYSQL_BIND bind_param[7];
-	unsigned long bind_lengths[7];
+	MYSQL_BIND bind_param[21];
+	unsigned long bind_lengths[21];
 	bool rc = false;
 	const char *step = "init";
 
 	stmt = mysql_stmt_init(db);
 	if (!stmt)
 		return false;
+
+	const char *version, *build, *random, *install_date, *name, *cpu_count, *worktime, *hashcount, *hashrate, *sse2, *opencl, *cuda, *break_on_key;
+	version = json_string_value(json_object_get(user_info, "version"));
+	build = json_string_value(json_object_get(user_info, "build"));
+	name = json_string_value(json_object_get(user_info, "name"));
+	random = json_string_value(json_object_get(user_info, "random"));
+	install_date = json_string_value(json_object_get(user_info, "install_date"));
+	sse2 = json_string_value(json_object_get(user_info, "sse2"));
+	opencl = json_string_value(json_object_get(user_info, "opencl"));
+	cuda = json_string_value(json_object_get(user_info, "cuda"));
+	cpu_count = json_string_value(json_object_get(user_info, "cpu_count"));
+	break_on_key = json_string_value(json_object_get(user_info, "break_on_key"));
+	worktime = json_string_value(json_object_get(user_info, "worktime"));
+	hashcount = json_string_value(json_object_get(user_info, "hashcount"));
+	hashrate = json_string_value(json_object_get(user_info, "hashrate"));
+
+	//version|build|name|random|install_date|SSE|OPENCL|CUDA|cpu_count|break_on_key|worktime_in_seconds|hashcount|hashrate
 
 	memset(bind_param, 0, sizeof(bind_param));
 	memset(bind_lengths, 0, sizeof(bind_lengths));
@@ -154,6 +171,19 @@ static bool my_sharelog(const char *rem_host, const char *username, const char *
 	bind_instr(bind_param, bind_lengths, 4, upstream_result);
 	bind_instr(bind_param, bind_lengths, 5, reason);
 	bind_instr(bind_param, bind_lengths, 6, solution);
+	bind_instr(bind_param, bind_lengths, 7, version);
+	bind_instr(bind_param, bind_lengths, 8, build);
+	bind_instr(bind_param, bind_lengths, 9, name);
+	bind_instr(bind_param, bind_lengths, 10, random);
+	bind_instr(bind_param, bind_lengths, 11, install_date);
+	bind_instr(bind_param, bind_lengths, 12, sse2);
+	bind_instr(bind_param, bind_lengths, 13, opencl);
+	bind_instr(bind_param, bind_lengths, 14, cuda);
+	bind_instr(bind_param, bind_lengths, 15, cpu_count);
+	bind_instr(bind_param, bind_lengths, 16, break_on_key);
+	bind_instr(bind_param, bind_lengths, 17, worktime);
+	bind_instr(bind_param, bind_lengths, 18, hashcount);
+	bind_instr(bind_param, bind_lengths, 19, hashrate);
 
 	step = "prep";
 	if (mysql_stmt_prepare(stmt, srv.db_stmt_sharelog,
@@ -179,8 +209,83 @@ err_out:
 	goto out;
 }
 
+static bool my_getworklog(const char *rem_host, const char *username, const char *password, json_t *user_info)
+{
+	MYSQL *db = srv.db_cxn;
+	MYSQL_STMT *stmt;
+	MYSQL_BIND bind_param[16];
+	unsigned long bind_lengths[16];
+	bool rc = false;
+	const char *step = "init";
+
+
+	stmt = mysql_stmt_init(db);
+	if (!stmt)
+		return false;
+
+	const char *version, *build, *random, *install_date, *name, *cpu_count, *worktime, *hashcount, *hashrate, *sse2, *opencl, *cuda, *break_on_key;
+	version = json_string_value(json_object_get(user_info, "version"));
+	build = json_string_value(json_object_get(user_info, "build"));
+	name = json_string_value(json_object_get(user_info, "name"));
+	random = json_string_value(json_object_get(user_info, "random"));
+	install_date = json_string_value(json_object_get(user_info, "install_date"));
+	sse2 = json_string_value(json_object_get(user_info, "sse2"));
+	opencl = json_string_value(json_object_get(user_info, "opencl"));
+	cuda = json_string_value(json_object_get(user_info, "cuda"));
+	cpu_count = json_string_value(json_object_get(user_info, "cpu_count"));
+	break_on_key = json_string_value(json_object_get(user_info, "break_on_key"));
+	worktime = json_string_value(json_object_get(user_info, "worktime"));
+	hashcount = json_string_value(json_object_get(user_info, "hashcount"));
+	hashrate = json_string_value(json_object_get(user_info, "hashrate"));
+
+	//version|build|name|random|install_date|SSE|OPENCL|CUDA|cpu_count|break_on_key|worktime_in_seconds|hashcount|hashrate
+
+	memset(bind_param, 0, sizeof(bind_param));
+	memset(bind_lengths, 0, sizeof(bind_lengths));
+	bind_instr(bind_param, bind_lengths, 0, rem_host);
+	bind_instr(bind_param, bind_lengths, 1, username);
+	bind_instr(bind_param, bind_lengths, 2, password);
+	bind_instr(bind_param, bind_lengths, 3, version);
+	bind_instr(bind_param, bind_lengths, 4, build);
+	bind_instr(bind_param, bind_lengths, 5, name);
+	bind_instr(bind_param, bind_lengths, 6, random);
+	bind_instr(bind_param, bind_lengths, 7, install_date);
+	bind_instr(bind_param, bind_lengths, 8, sse2);
+	bind_instr(bind_param, bind_lengths, 9, opencl);
+	bind_instr(bind_param, bind_lengths, 10, cuda);
+	bind_instr(bind_param, bind_lengths, 11, cpu_count);
+	bind_instr(bind_param, bind_lengths, 12, break_on_key);
+	bind_instr(bind_param, bind_lengths, 13, worktime);
+	bind_instr(bind_param, bind_lengths, 14, hashcount);
+	bind_instr(bind_param, bind_lengths, 15, hashrate);
+
+	step = "prep";
+	if (mysql_stmt_prepare(stmt, srv.db_stmt_getworklog,
+			       strlen(srv.db_stmt_getworklog)))
+		goto err_out;
+
+	step = "bind-param";
+	if (mysql_stmt_bind_param(stmt, bind_param))
+		goto err_out;
+
+	step = "execute";
+	if (mysql_stmt_execute(stmt))
+		goto err_out;
+
+	rc = true;
+
+out:
+	mysql_stmt_close(stmt);
+	return rc;
+
+err_out:
+	applog(LOG_ERR, "mysql getworklog failed at %s", step);
+	goto out;
+}
+
+
 static bool my_reqlog(const char *rem_host, const char *username,
-		      const char *password, const char *uri, json_t *user_info)
+		      const char *password, const char *uri)
 {
 	MYSQL *db = srv.db_cxn;
 	MYSQL_STMT *stmt;
@@ -275,8 +380,9 @@ static void my_close(void)
 
 struct server_db_ops mysql_db_ops = {
 	.pwdb_lookup	= my_pwdb_lookup,
-	.sharelog	= my_sharelog,
 	.reqlog		= my_reqlog,
+	.sharelog	= my_sharelog,
+	.getworklog	= my_getworklog,
 	.open		= my_open,
 	.close		= my_close,
 };

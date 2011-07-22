@@ -33,6 +33,11 @@
 #include <curl/curl.h>
 #include "server.h"
 
+inline const char * const BoolToString(bool b)
+{
+  return b ? "TRUE" : "FALSE";
+}
+
 void applog(int prio, const char *fmt, ...)
 {
 	va_list ap;

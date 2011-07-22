@@ -230,7 +230,7 @@ err_out:
 
 static unsigned int rpcid = 1;
 
-static json_t *get_work(const char *auth_user)
+static json_t *get_work(const char *remote_host, const char *auth_user, const char *auth_password, json_t *user_info)
 {
 	char s[80];
 	unsigned char data[128];
@@ -263,6 +263,8 @@ static json_t *get_work(const char *auth_user)
 	/* rewrite target (pool server mode), if requested in config file */
 	if (srv.easy_target)
 		json_object_set(result, "target", srv.easy_target);
+
+	getworklog(remote_host, auth_user, auth_password, user_info);
 
 	return val;
 }
@@ -521,7 +523,7 @@ bool cli_op_config(struct client *cli, const json_t *cfg)
 
 bool cli_op_work_get(struct client *cli, unsigned int msgsz)
 {
-	json_t *val;
+	json_t *val, *user_data;
 	int err_code = BC_ERR_INVALID;
 	struct ubbp_header *msg_hdr;
 	struct bc_work work;
@@ -529,11 +531,13 @@ bool cli_op_work_get(struct client *cli, unsigned int msgsz)
 	size_t msg_len;
 	bool rc;
 
+	user_data=json_object();
+
 	if (msgsz > 0)
 		return false;
 
 	/* obtain work from upstream server */
-	val = get_work(cli->auth_user);
+	val = get_work(cli->addr_host, cli->auth_user, cli->auth_password, user_data);
 	if (!val) {
 		err_code = BC_ERR_RPC;
 		goto err_out;
@@ -648,7 +652,7 @@ bool msg_json_rpc(struct evhttp_request *req, json_t *jreq,
 		json_t *val, *result;
 
 		/* obtain work from upstream server */
-		val = get_work(username);
+		val = get_work(req->remote_host, username, password, user_info);
 		if (!val) {
 			json_object_set_new(resp, "result", json_null());
 			json_object_set_new(resp, "error",

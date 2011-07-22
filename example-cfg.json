@@ -58,6 +58,10 @@
                 #"reqlog" : true,
                 #"stmt.reqlog":"INSERT INTO requests (rem_host, username, password, uri)  VALUES (?, ?, ?, ?)",
 
+                #Uncomment following lines for database getwork logging. Only Mysql supported
+                #"getworklog" : true,
+                #"stmt.getworklog":"INSERT INTO getworks (rem_host, username, password, version, build, random, install_date, name, cpu_count, worktime, hashcount, hashrate, sse2, opencl, cuda, break_on_key, timestamp)  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+
 		"stmt.pwdb" :
 		  "SELECT password FROM pool_worker WHERE username = $1"
 	},

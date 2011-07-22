@@ -212,7 +212,7 @@ static void parse_memcached(const json_t *obj)
 static void parse_database(const json_t *db_obj)
 {
 	const json_t *tmp;
-	const char *db_host, *db_name, *db_un, *db_pw, *db_st_pwdb, *db_st_sharelog, *db_st_reqlog, *tmp_str;
+	const char *db_host, *db_name, *db_un, *db_pw, *db_st_pwdb, *db_st_sharelog, *db_st_getworklog, *db_st_reqlog, *tmp_str;
 	int db_port = -1;
 
 	if (!json_is_object(db_obj))
@@ -256,6 +256,8 @@ static void parse_database(const json_t *db_obj)
 	db_un = json_string_value(json_object_get(db_obj, "username"));
 	db_pw = json_string_value(json_object_get(db_obj, "password"));
 	srv.db_sharelog = (json_is_true(json_object_get(db_obj, "sharelog"))) ?
+		true : false;
+	srv.db_getworklog = (json_is_true(json_object_get(db_obj, "getwork"))) ?
 		true : false;
 	srv.db_reqlog = (json_is_true(json_object_get(db_obj, "reqlog"))) ?
 		true : false;
@@ -305,6 +307,10 @@ static void parse_database(const json_t *db_obj)
 		json_object_get(db_obj, "stmt.reqlog"));
 	if (db_st_reqlog)
 		srv.db_stmt_reqlog = strdup(db_st_reqlog);
+	db_st_getworklog = json_string_value(
+		json_object_get(db_obj, "stmt.getworklog"));
+	if (db_st_getworklog)
+		srv.db_stmt_getworklog = strdup(db_st_getworklog);
 
 }
 
