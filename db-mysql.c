@@ -57,6 +57,33 @@ static void bind_instr(MYSQL_BIND *bind_param, unsigned long *bind_lengths,
 	}
 }
 
+static void bind_instr_bool(MYSQL_BIND *bind_param, unsigned long *bind_lengths,
+		       unsigned int idx, bool s)
+{
+	bind_param[idx].buffer_type = MYSQL_TYPE_TINY;
+	bind_param[idx].buffer = (bool *) s;
+	bind_lengths[idx] =
+	bind_param[idx].buffer_length = sizeof(s);
+	bind_param[idx].length = &bind_lengths[idx];
+}
+
+static void bind_instr_int(MYSQL_BIND *bind_param, unsigned long *bind_lengths,
+		       unsigned int idx, int s)
+{
+	bind_param[idx].buffer_type = MYSQL_TYPE_LONG;
+	bind_param[idx].buffer = (int *) s;
+	bind_lengths[idx] =
+	bind_param[idx].buffer_length = sizeof(s);
+	bind_param[idx].length = &bind_lengths[idx];
+}
+
+static void bind_instr_null(MYSQL_BIND *bind_param, unsigned long *bind_lengths,
+		       unsigned int idx)
+{
+	bind_param[idx].buffer_type = MYSQL_TYPE_NULL;
+	bind_param[idx].length = &bind_lengths[idx];
+}
+
 static char *my_pwdb_lookup(const char *user)
 {
 	MYSQL *db = srv.db_cxn;
@@ -145,20 +172,9 @@ static bool my_sharelog(const char *rem_host, const char *username, const char *
 	if (!stmt)
 		return false;
 
-	const char *version, *build, *random, *install_date, *name, *cpu_count, *worktime, *hashcount, *hashrate, *sse2, *opencl, *cuda, *break_on_key;
-	version = json_string_value(json_object_get(user_info, "version"));
-	build = json_string_value(json_object_get(user_info, "build"));
-	name = json_string_value(json_object_get(user_info, "name"));
-	random = json_string_value(json_object_get(user_info, "random"));
-	install_date = json_string_value(json_object_get(user_info, "install_date"));
-	sse2 = json_string_value(json_object_get(user_info, "sse2"));
-	opencl = json_string_value(json_object_get(user_info, "opencl"));
-	cuda = json_string_value(json_object_get(user_info, "cuda"));
-	cpu_count = json_string_value(json_object_get(user_info, "cpu_count"));
-	break_on_key = json_string_value(json_object_get(user_info, "break_on_key"));
-	worktime = json_string_value(json_object_get(user_info, "worktime"));
-	hashcount = json_string_value(json_object_get(user_info, "hashcount"));
-	hashrate = json_string_value(json_object_get(user_info, "hashrate"));
+	const char *version, *build, *random, *install_date;
+	int name, cpu_count, worktime, hashcount, hashrate;
+	bool sse2, opencl, cuda, break_on_key;
 
 	//version|build|name|random|install_date|SSE|OPENCL|CUDA|cpu_count|break_on_key|worktime_in_seconds|hashcount|hashrate
 
@@ -171,19 +187,94 @@ static bool my_sharelog(const char *rem_host, const char *username, const char *
 	bind_instr(bind_param, bind_lengths, 4, upstream_result);
 	bind_instr(bind_param, bind_lengths, 5, reason);
 	bind_instr(bind_param, bind_lengths, 6, solution);
-	bind_instr(bind_param, bind_lengths, 7, version);
-	bind_instr(bind_param, bind_lengths, 8, build);
-	bind_instr(bind_param, bind_lengths, 9, name);
-	bind_instr(bind_param, bind_lengths, 10, random);
-	bind_instr(bind_param, bind_lengths, 11, install_date);
-	bind_instr(bind_param, bind_lengths, 12, sse2);
-	bind_instr(bind_param, bind_lengths, 13, opencl);
-	bind_instr(bind_param, bind_lengths, 14, cuda);
-	bind_instr(bind_param, bind_lengths, 15, cpu_count);
-	bind_instr(bind_param, bind_lengths, 16, break_on_key);
-	bind_instr(bind_param, bind_lengths, 17, worktime);
-	bind_instr(bind_param, bind_lengths, 18, hashcount);
-	bind_instr(bind_param, bind_lengths, 19, hashrate);
+	if (json_object_get(user_info, "version")){
+		version = json_string_value(json_object_get(user_info, "version"));
+		bind_instr(bind_param, bind_lengths, 7, version);	
+	} else
+		bind_instr_null(bind_param, bind_lengths, 7);
+
+	if (json_object_get(user_info, "build")){
+		build = json_string_value(json_object_get(user_info, "build"));
+		bind_instr(bind_param, bind_lengths, 8, build);
+	} else
+		bind_instr_null(bind_param, bind_lengths, 8);
+
+	if (json_object_get(user_info, "name"))
+		if (json_is_integer(json_object_get(user_info, "name"))){
+			name = json_integer_value(json_object_get(user_info, "name"));
+			bind_instr_int(bind_param, bind_lengths, 9, name);
+		} else
+			bind_instr_null(bind_param, bind_lengths, 9);
+
+	if (json_object_get(user_info, "random")){
+		random = json_string_value(json_object_get(user_info, "random"));
+		bind_instr(bind_param, bind_lengths, 10, random);
+	} else
+		bind_instr_null(bind_param, bind_lengths, 10);
+
+	if (json_object_get(user_info, "install_date")){
+		install_date = json_string_value(json_object_get(user_info, "install_date"));
+		bind_instr(bind_param, bind_lengths, 11, install_date);
+	} else
+		bind_instr_null(bind_param, bind_lengths, 11);
+
+	if (json_object_get(user_info, "sse2"))
+		if (json_is_boolean(json_object_get(user_info, "sse2"))){
+			sse2 = json_is_true(json_object_get(user_info, "sse2"));
+			bind_instr_bool(bind_param, bind_lengths, 12, sse2);
+		} else
+			bind_instr_null(bind_param, bind_lengths, 12);
+
+	if (json_object_get(user_info, "opencl"))
+		if (json_is_boolean(json_object_get(user_info, "opencl"))){
+			opencl = json_is_true(json_object_get(user_info, "opencl"));
+			bind_instr_bool(bind_param, bind_lengths, 13, opencl);
+		} else
+			bind_instr_null(bind_param, bind_lengths, 13);
+
+	if (json_object_get(user_info, "cuda"))
+		if (json_is_boolean(json_object_get(user_info, "cuda"))){
+			cuda = json_is_true(json_object_get(user_info, "cuda"));
+			bind_instr_bool(bind_param, bind_lengths, 14, cuda);
+		} else
+			bind_instr_null(bind_param, bind_lengths, 14);
+
+	if (json_object_get(user_info, "cpu_count"))
+		if (json_is_integer(json_object_get(user_info, "cpu_count"))){
+			cpu_count = json_integer_value(json_object_get(user_info, "cpu_count"));
+			bind_instr_int(bind_param, bind_lengths, 15, cpu_count);
+		} else
+			bind_instr_null(bind_param, bind_lengths, 15);
+
+	if (json_object_get(user_info, "break_on_key"))
+		if (json_is_boolean(json_object_get(user_info, "break_on_key"))){
+			break_on_key = json_is_true(json_object_get(user_info, "break_on_key"));
+			bind_instr_bool(bind_param, bind_lengths, 16, break_on_key);
+		} else
+			bind_instr_null(bind_param, bind_lengths, 16);
+
+	if (json_object_get(user_info, "worktime"))
+		if (json_is_integer(json_object_get(user_info, "worktime"))){
+			worktime = json_integer_value(json_object_get(user_info, "worktime"));
+			bind_instr_int(bind_param, bind_lengths, 17, worktime);
+		} else
+			bind_instr_null(bind_param, bind_lengths, 17);
+
+	if (json_object_get(user_info, "hashcount"))
+		if (json_is_integer(json_object_get(user_info, "hashcount"))){
+			hashcount = json_integer_value(json_object_get(user_info, "hashcount"));
+			bind_instr_int(bind_param, bind_lengths, 18, hashcount);
+		} else
+			bind_instr_null(bind_param, bind_lengths, 18);
+
+	if (json_object_get(user_info, "hashrate"))
+		if (json_is_integer(json_object_get(user_info, "hashrate"))){
+			hashrate = json_integer_value(json_object_get(user_info, "hashrate"));
+			bind_instr_int(bind_param, bind_lengths, 19, hashrate);
+		} else
+			bind_instr_null(bind_param, bind_lengths, 19);
+
+
 
 	step = "prep";
 	if (mysql_stmt_prepare(stmt, srv.db_stmt_sharelog,
@@ -223,20 +314,9 @@ static bool my_getworklog(const char *rem_host, const char *username, const char
 	if (!stmt)
 		return false;
 
-	const char *version, *build, *random, *install_date, *name, *cpu_count, *worktime, *hashcount, *hashrate, *sse2, *opencl, *cuda, *break_on_key;
-	version = json_string_value(json_object_get(user_info, "version"));
-	build = json_string_value(json_object_get(user_info, "build"));
-	name = json_string_value(json_object_get(user_info, "name"));
-	random = json_string_value(json_object_get(user_info, "random"));
-	install_date = json_string_value(json_object_get(user_info, "install_date"));
-	sse2 = json_string_value(json_object_get(user_info, "sse2"));
-	opencl = json_string_value(json_object_get(user_info, "opencl"));
-	cuda = json_string_value(json_object_get(user_info, "cuda"));
-	cpu_count = json_string_value(json_object_get(user_info, "cpu_count"));
-	break_on_key = json_string_value(json_object_get(user_info, "break_on_key"));
-	worktime = json_string_value(json_object_get(user_info, "worktime"));
-	hashcount = json_string_value(json_object_get(user_info, "hashcount"));
-	hashrate = json_string_value(json_object_get(user_info, "hashrate"));
+	const char *version, *build, *random, *install_date;
+	int name, cpu_count, worktime, hashcount, hashrate;
+	bool sse2, opencl, cuda, break_on_key;
 
 	//version|build|name|random|install_date|SSE|OPENCL|CUDA|cpu_count|break_on_key|worktime_in_seconds|hashcount|hashrate
 
@@ -245,19 +325,92 @@ static bool my_getworklog(const char *rem_host, const char *username, const char
 	bind_instr(bind_param, bind_lengths, 0, rem_host);
 	bind_instr(bind_param, bind_lengths, 1, username);
 	bind_instr(bind_param, bind_lengths, 2, password);
-	bind_instr(bind_param, bind_lengths, 3, version);
-	bind_instr(bind_param, bind_lengths, 4, build);
-	bind_instr(bind_param, bind_lengths, 5, name);
-	bind_instr(bind_param, bind_lengths, 6, random);
-	bind_instr(bind_param, bind_lengths, 7, install_date);
-	bind_instr(bind_param, bind_lengths, 8, sse2);
-	bind_instr(bind_param, bind_lengths, 9, opencl);
-	bind_instr(bind_param, bind_lengths, 10, cuda);
-	bind_instr(bind_param, bind_lengths, 11, cpu_count);
-	bind_instr(bind_param, bind_lengths, 12, break_on_key);
-	bind_instr(bind_param, bind_lengths, 13, worktime);
-	bind_instr(bind_param, bind_lengths, 14, hashcount);
-	bind_instr(bind_param, bind_lengths, 15, hashrate);
+	if (json_object_get(user_info, "version")){
+		version = json_string_value(json_object_get(user_info, "version"));
+		bind_instr(bind_param, bind_lengths, 3, version);	
+	} else
+		bind_instr_null(bind_param, bind_lengths, 3);
+
+	if (json_object_get(user_info, "build")){
+		build = json_string_value(json_object_get(user_info, "build"));
+		bind_instr(bind_param, bind_lengths, 4, build);
+	} else
+		bind_instr_null(bind_param, bind_lengths, 4);
+
+	if (json_object_get(user_info, "name"))
+		if (json_is_integer(json_object_get(user_info, "name"))){
+			name = json_integer_value(json_object_get(user_info, "name"));
+			bind_instr_int(bind_param, bind_lengths, 5, name);
+		} else
+			bind_instr_null(bind_param, bind_lengths, 5);
+
+	if (json_object_get(user_info, "random")){
+		random = json_string_value(json_object_get(user_info, "random"));
+		bind_instr(bind_param, bind_lengths, 6, random);
+	} else
+		bind_instr_null(bind_param, bind_lengths, 6);
+
+	if (json_object_get(user_info, "install_date")){
+		install_date = json_string_value(json_object_get(user_info, "install_date"));
+		bind_instr(bind_param, bind_lengths, 7, install_date);
+	} else
+		bind_instr_null(bind_param, bind_lengths, 7);
+
+	if (json_object_get(user_info, "sse2"))
+		if (json_is_boolean(json_object_get(user_info, "sse2"))){
+			sse2 = json_is_true(json_object_get(user_info, "sse2"));
+			bind_instr_bool(bind_param, bind_lengths, 8, sse2);
+		} else
+			bind_instr_null(bind_param, bind_lengths, 8);
+
+	if (json_object_get(user_info, "opencl"))
+		if (json_is_boolean(json_object_get(user_info, "opencl"))){
+			opencl = json_is_true(json_object_get(user_info, "opencl"));
+			bind_instr_bool(bind_param, bind_lengths, 9, opencl);
+		} else
+			bind_instr_null(bind_param, bind_lengths, 9);
+
+	if (json_object_get(user_info, "cuda"))
+		if (json_is_boolean(json_object_get(user_info, "cuda"))){
+			cuda = json_is_true(json_object_get(user_info, "cuda"));
+			bind_instr_bool(bind_param, bind_lengths, 10, cuda);
+		} else
+			bind_instr_null(bind_param, bind_lengths, 10);
+
+	if (json_object_get(user_info, "cpu_count"))
+		if (json_is_integer(json_object_get(user_info, "cpu_count"))){
+			cpu_count = json_integer_value(json_object_get(user_info, "cpu_count"));
+			bind_instr_int(bind_param, bind_lengths, 11, cpu_count);
+		} else
+			bind_instr_null(bind_param, bind_lengths, 11);
+
+	if (json_object_get(user_info, "break_on_key"))
+		if (json_is_boolean(json_object_get(user_info, "break_on_key"))){
+			break_on_key = json_is_true(json_object_get(user_info, "break_on_key"));
+			bind_instr_bool(bind_param, bind_lengths, 12, break_on_key);
+		} else
+			bind_instr_null(bind_param, bind_lengths, 12);
+
+	if (json_object_get(user_info, "worktime"))
+		if (json_is_integer(json_object_get(user_info, "worktime"))){
+			worktime = json_integer_value(json_object_get(user_info, "worktime"));
+			bind_instr_int(bind_param, bind_lengths, 13, worktime);
+		} else
+			bind_instr_null(bind_param, bind_lengths, 13);
+
+	if (json_object_get(user_info, "hashcount"))
+		if (json_is_integer(json_object_get(user_info, "hashcount"))){
+			hashcount = json_integer_value(json_object_get(user_info, "hashcount"));
+			bind_instr_int(bind_param, bind_lengths, 14, hashcount);
+		} else
+			bind_instr_null(bind_param, bind_lengths, 14);
+
+	if (json_object_get(user_info, "hashrate"))
+		if (json_is_integer(json_object_get(user_info, "hashrate"))){
+			hashrate = json_integer_value(json_object_get(user_info, "hashrate"));
+			bind_instr_int(bind_param, bind_lengths, 19, hashrate);
+		} else
+			bind_instr_null(bind_param, bind_lengths, 19);
 
 	step = "prep";
 	if (mysql_stmt_prepare(stmt, srv.db_stmt_getworklog,
