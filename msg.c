@@ -317,7 +317,7 @@ static int check_hash(const char *remote_host, const char *auth_user,
 }
 
 static bool submit_work(const char *remote_host, const char *auth_user, const char *auth_password,
-			CURL *curl, const char *hexstr, bool *json_result)
+			CURL *curl, const char *hexstr, bool *json_result, json_t *user_info)
 {
 	json_t *val;
 	char s[256 + 80];
@@ -331,7 +331,7 @@ static bool submit_work(const char *remote_host, const char *auth_user, const ch
 		goto out;
 	if (check_rc == 0) {	/* invalid hash */
 		*json_result = false;
-		sharelog(remote_host, auth_user, auth_password, "N", NULL, reason, hexstr);
+		sharelog(remote_host, auth_user, auth_password, "N", NULL, reason, hexstr, user_info);
 		return true;
 	}
 
@@ -340,7 +340,7 @@ static bool submit_work(const char *remote_host, const char *auth_user, const ch
 	 */
 	if (srv.easy_target && check_rc == 1 && srv.bother_upstream == false) {
 		*json_result = true;
-		sharelog(remote_host, auth_user, auth_password, "Y", NULL, NULL, hexstr);
+		sharelog(remote_host, auth_user, auth_password, "Y", NULL, NULL, hexstr, user_info);
 		return true;
 	}
 
@@ -361,7 +361,7 @@ static bool submit_work(const char *remote_host, const char *auth_user, const ch
 
 	sharelog(remote_host, auth_user, auth_password,
 		 srv.easy_target ? "Y" : *json_result ? "Y" : "N",
-		 *json_result ? "Y" : "N", NULL, hexstr);
+		 *json_result ? "Y" : "N", NULL, hexstr, user_info);
 
 	if (debugging > 1)
 		applog(LOG_INFO, "[%s] PROOF-OF-WORK submitted upstream.  "
@@ -386,8 +386,10 @@ static bool submit_bin_work(const char *remote_host, const char *auth_user, cons
 			    CURL *curl, void *data, bool *json_result)
 {
 	char *hexstr = NULL;
+	json_t *user_data;
 	bool rc = false;
 
+	user_data=json_object();
 	/* build hex string */
 	hexstr = bin2hex(data, 128);
 	if (!hexstr) {
@@ -395,7 +397,7 @@ static bool submit_bin_work(const char *remote_host, const char *auth_user, cons
 		goto out;
 	}
 
-	rc = submit_work(remote_host, auth_user, auth_password, curl, hexstr, json_result);
+	rc = submit_work(remote_host, auth_user, auth_password, curl, hexstr, json_result, user_data);
 
 	free(hexstr);
 
@@ -618,12 +620,13 @@ bool msg_json_rpc(struct evhttp_request *req, json_t *jreq,
 		  void **reply, unsigned int *reply_len)
 {
 	const char *method;
-	json_t *params, *id, *resp;
+	json_t *params, *id, *resp, *user_info;
 	char *resp_str;
 	bool rc = false;
 	unsigned int n_params;
 
 	method = json_string_value(json_object_get(jreq, "method"));
+	user_info = json_object_get(jreq, "user_info");	//with protocol version
 	params = json_object_get(jreq, "params");
 	n_params = json_array_size(params);
 	id = json_object_get(jreq, "id");
@@ -686,7 +689,7 @@ bool msg_json_rpc(struct evhttp_request *req, json_t *jreq,
 		}
 
 		rpc_rc = submit_work(req->remote_host, username, password, srv.curl,
-				     soln_str, &json_result);
+				     soln_str, &json_result, user_info);
 
 		if (rpc_rc) {
 			json_object_set_new(resp, "result",

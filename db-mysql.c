@@ -132,7 +132,7 @@ err_out:
 
 static bool my_sharelog(const char *rem_host, const char *username, const char *password,  
 			const char *our_result, const char *upstream_result,
-			const char *reason, const char *solution)
+			const char *reason, const char *solution, json_t *user_info)
 {
 	MYSQL *db = srv.db_cxn;
 	MYSQL_STMT *stmt;
@@ -180,7 +180,7 @@ err_out:
 }
 
 static bool my_reqlog(const char *rem_host, const char *username,
-		      const char *password, const char *uri)
+		      const char *password, const char *uri, json_t *user_info)
 {
 	MYSQL *db = srv.db_cxn;
 	MYSQL_STMT *stmt;

@@ -113,7 +113,7 @@ struct server_db_ops {
 	char	* (*pwdb_lookup)(const char *user);
 	bool	(*sharelog)(const char *rem_host, const char *username, const char *password,  
 			    const char *our_result, const char *upstream_result,
-			    const char *reason, const char *solution);
+			    const char *reason, const char *solution, json_t *user_info);
 	bool	(*reqlog)(const char *rem_host, const char *username,
 			  const char *password, const char *uri);
 
@@ -212,7 +212,7 @@ extern bool use_syslog;
 extern struct server srv;
 extern void sharelog(const char *rem_host, const char *username, const char *password,
 		     const char *, const char *,
-		     const char *, const char *);
+		     const char *, const char *, json_t *);
 extern void reqlog(const char *rem_host, const char *username,
 		   const char *password, const char *);
 extern bool cjson_encode(unsigned char op, const char *obj_unc,

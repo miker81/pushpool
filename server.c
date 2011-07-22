@@ -665,7 +665,7 @@ void reqlog(const char *rem_host, const char *username,
 
 void sharelog(const char *rem_host, const char *username, const char *password,  
 	      const char *our_result, const char *upstream_result,
-	      const char *reason, const char *solution)
+	      const char *reason, const char *solution, json_t *user_data)
 {
 	struct timeval tv = { };
 	char *f;
@@ -674,7 +674,7 @@ void sharelog(const char *rem_host, const char *username, const char *password,
 
 	if (srv.db_sharelog && srv.db_ops->sharelog != NULL)
 		srv.db_ops->sharelog(rem_host, username, password, our_result,
-				     upstream_result, reason, solution);
+				     upstream_result, reason, solution, user_data);
 
 	if (srv.share_fd < 0)
 		return;
